@@ -1,0 +1,94 @@
+---
+title: "RNA-seq Data Analysis Assignment"
+output: html_document
+date: "2025-09-20"
+---
+
+## Introduction
+This analysis explores RNA-seq differential expression data from an experiment comparing a diseased cell line with the same cell line treated with compound X. The main objectives are to:
+
+- Generate a volcano plot to visualize differential expression.
+- Identify significantly upregulated and downregulated genes.
+- Report the top 5 upregulated and downregulated genes.
+- Briefly describe the biological functions of these genes.
+`
+```{r}
+# Load data directly from the link
+url <- "https://gist.githubusercontent.com/stephenturner/806e31fce55a8b7175af/raw/1a507c4c3f9f1baaa3a69187223ff3d3050628d4/results.txt"
+rna_data <- read.table(url, header = TRUE, sep = "", stringsAsFactors = FALSE)
+
+```
+
+```{r}
+# Inspect data
+head(rna_data)
+str(rna_data)
+colnames(rna_data)
+```
+
+```{r}
+# Classify as Upregulated, Downregulated, or Not Significant
+rna_data$Significant <- ifelse(
+  rna_data$log2FoldChange > 1 & rna_data$pvalue < 0.01, "Upregulated",
+  ifelse(rna_data$log2FoldChange < -1 & rna_data$pvalue < 0.01, "Downregulated", "Not Significant")
+)
+
+# Summary counts
+table(rna_data$Significant)
+
+```
+
+
+### Volcano Plot  
+Figure 1: Volcano plot showing significantly upregulated (red) and downregulated (blue) genes.
+```{r}
+library(ggplot2)
+
+ggplot(rna_data, aes(x = log2FoldChange, y = -log10(pvalue), color = Significant)) +
+  geom_point(alpha = 0.6, size = 1.5) +
+  scale_color_manual(values = c("Upregulated" = "red", 
+                                "Downregulated" = "blue", 
+                                "Not Significant" = "grey")) +
+  theme_minimal() +
+  labs(title = "Volcano Plot of RNA-seq Data",
+       x = "log2 Fold Change",
+       y = "-log10(p-value)")
+```
+
+## Top Differentially Expressed Genes
+```{r}
+# Upregulated genes
+up_genes <- subset(rna_data, log2FoldChange > 1 & pvalue < 0.01)
+
+# Downregulated genes
+down_genes <- subset(rna_data, log2FoldChange < -1 & pvalue < 0.01)
+
+# Top 5 upregulated
+top5_up <- head(up_genes[order(up_genes$pvalue), ], 5)
+
+# Top 5 downregulated
+top5_down <- head(down_genes[order(down_genes$pvalue), ], 5)
+
+```
+
+```{r}
+knitr::kable(top5_up, caption = "Top 5 Upregulated Genes")
+knitr::kable(top5_down, caption = "Top 5 Downregulated Genes")
+
+```
+
+## Interpretation and Discussion
+
+The volcano plot highlights a small set of genes with significant changes in expression.
+A total of 19 genes were significantly upregulated and 91 genes were significantly downregulated.
+Among the upregulated genes, EMILIN2 and DTHD1 showed the lowest p-values, suggesting strong statistical evidence of increased expression following treatment. Conversely, TBX5 was the most strongly downregulated gene (log2FC = –2.1), followed by LAMA2 and IFITM1, all of which may play roles in disease progression or treatment response.
+These genes may represent key regulatory candidates involved in the biological condition being studied.
+
+Further downstream analyses, such as Gene Ontology enrichment or pathway analysis, would help to link these genes to functional biological processes.
+Validation using independent methods (e.g., qPCR) is recommended to confirm these expression changes.
+
+## Conclusion
+This analysis identified a small number of genes with significant expression changes between the two conditions. The top candidates (e.g., *TBX5*, *EMILIN2*) may play important roles in the underlying biological process and warrant further investigation.
+
+
+
